@@ -82,10 +82,17 @@ i_p_array = [x['i_p'] for x in dict_i_speed]
 print('Масса топлива для перелета с минимальной скоростью: ', fuel_consumption(M_0))
 step = int(input("Задайте шаг уменьшения массы ПН - "))
 search_m_PN(fuel_consumption(M_0), m_PN)
-1
+# График зависимости скорости от угла поворота в перигее
 plt.plot(i_p_array, speed_array)
 plt.grid()
+plt.xlabel("Угол поворота в перигее, град.")
+plt.ylabel("Суммарная импульсная скорость, км/с")
 plt.show()
+
+# График зависимости массы топлива от массы ПН
 plt.plot(m_PG_array, m_t_array)
 plt.grid()
+plt.xlabel("Масса ПН, кг")
+plt.ylabel("Масса топлива РБ, кг")
 plt.show()
+

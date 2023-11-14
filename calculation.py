@@ -2,9 +2,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-i_support = 45.6166667              # Наклонение опорной орбиты, град.
+latitude = 45.6166667               # Широта точки старта, град.
 i_target = 0                        # Наклонение ГСО, град.
-delta_i = i_support - i_target      # Изменение наклонения орбиты КА, град.
 i_p = 0                             # Поворот орбиты в перигее, град.
 mu_Earth = 398600                   # Гравитационный параметр Земли, км^3/c^2
 R_Earth = 6371                      # Радиус Земли, км
@@ -18,6 +17,18 @@ m_RB = 6650                         # Масса РБ
 M_0 = m_RB + m_PN                   # Масса КА (РБ + ПН), кг
 I = 333.2 * 9.81/1000               # Удельный импульс, км/с
 dict_i_speed = []
+azimuth = 0                         # Азимут, град.
+i_support_array = []
+
+while azimuth <= 90:        # Нахождение минимального угла наклонения опорной орбиты при изменение азимута
+    i_support = math.acos(math.sin(azimuth  * math.pi/180) * math.cos(latitude * math.pi/180))
+    azimuth = azimuth + 0.5
+    i_support_array.append(i_support * 180 / math.pi)
+i_support = min([x for x in i_support_array])
+print("Минимальное наклонение опорной орбиты - ", i_support)
+
+delta_i = i_support - i_target      # Изменение наклонения орбиты КА, град.
+
 
 def increase_speed_in_per(angle):   # Формула необходимого увеличения скорости в перигее
     angle = angle * math.pi/180
@@ -82,6 +93,7 @@ i_p_array = [x['i_p'] for x in dict_i_speed]
 print('Масса топлива для перелета с минимальной скоростью: ', fuel_consumption(M_0))
 step = int(input("Задайте шаг уменьшения массы ПН - "))
 search_m_PN(fuel_consumption(M_0), m_PN)
+
 # График зависимости скорости от угла поворота в перигее
 plt.plot(i_p_array, speed_array)
 plt.grid()

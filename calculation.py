@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 latitude = 45.62                    # Широта точки старта, град.
 i_target = 0                        # Наклонение ГСО, град.
@@ -144,6 +145,13 @@ for j in range(80000, 400000, 60000):
     print('Масса топлива для перелета с минимальной скоростью: ', fuel_consumption(M_0, min_speed_2))
     step = int(input("Задайте шаг уменьшения массы КА - "))
     search_m_PN(fuel_consumption(M_0, min_speed_2), m_PN, min_speed_2)
+    path = 'three_impulse_' + str(j) + '.csv'
+    with open(path,'w') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(('speed','i_2','i_3'))
+
+        for elem in dict_three_impulse:
+            writer.writerow((elem['speed'],elem['i_2'],elem['i_3']))
 
 
 

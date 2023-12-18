@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-latitude = 45.62                    # Широта точки старта, град.
+latitude = 45.6                    # Широта точки старта, град.
 i_target = 0                        # Наклонение ГСО, град.
 i_p = 0                             # Поворот орбиты в перигее, град.
 mu_Earth = 398600                   # Гравитационный параметр Земли, км^3/c^2
@@ -20,6 +20,7 @@ I = 333.2 * 9.81/1000               # Удельный импульс, км/с
 dict_i_speed = []
 azimuth = 0                         # Азимут, град.
 i_support_array = []
+first_speed_space = math.sqrt(6.67 * math.pow(10, -11) * 5.97 * math.pow(10, 24) / (R_Earth * 1000 + h_p * 1000))/1000  #Первая космическая скорость, км/с
 
 
 while azimuth <= 90:        # Нахождение минимального угла наклонения опорной орбиты при изменение азимута
@@ -27,9 +28,9 @@ while azimuth <= 90:        # Нахождение минимального уг
     azimuth = azimuth + 0.5
     i_support_array.append(i_support * 180 / math.pi)
 i_support = min([x for x in i_support_array])
-print("Минимальное наклонение опорной орбиты - ", i_support)
+print("Минимальное наклонение опорной орбиты - ", round(i_support, 1))
 
-delta_i = i_support - i_target      # Изменение наклонения орбиты КА, град.
+delta_i = round(i_support - i_target, 1)      # Изменение наклонения орбиты КА, град.
 
 
 def increase_speed_in_per(angle):   # Формула необходимого увеличения скорости в перигее
@@ -45,6 +46,7 @@ def increase_speed_in_per(angle):   # Формула необходимого у
 
 def increase_speed_in_ap(delta_angle, angle):   # Формула необходимого увеличения скорости в апогее
     angle = angle * math.pi/180
+    delta_angle = delta_angle * math.pi/180
     d = math.sqrt(2/(1 + (r_a/r_p)))
     a = mu_Earth/r_a
     b = math.pow((1 - d), 2)
@@ -74,6 +76,7 @@ def search_m_PN(m_t, m_PG, speed):                  # Подбор массы К
         m_t = fuel_consumption(M_start, speed)
         # m_t_array.append(m_t)
     print('Допустимая масса КА для перелета с опорной орбиты на ГСО = ', m_PG, '\n Израсходованное топливо РБ составит, кг : ', m_t)
+    return(int(m_PG))
 
 
 for i in np.arange(i_p, 10 + 0.2, 0.2):    # Нахождение оптимального угла поворота в перигее
@@ -114,30 +117,37 @@ plt.show()
 
 # Трехимпульсный перелет
 
+time_array = []
+height_array = []
 
-def speed_three_impulse(angle1, angle2, r_ap):      # Апогей переходных эллиптических орбит, км
+def speed_three_impulse(delta_angle, angle1, angle2, r_ap):      # Апогей переходных эллиптических орбит, км
     r_n = r_p               # Радиус низшей орбиты
     r_v = r_a               # Радиус высшей орбиты          
     r_otn = r_v/r_n
     r_ap_otn = r_ap/r_n
+    angle1 = angle1 * math.pi/180
+    angle2 = angle2 * math.pi/180
+    delta_angle = delta_angle * math.pi/180
     a1 = (1 + 3 * r_ap_otn)/(1 + r_ap_otn)
     a2 = math.sqrt(2 * r_ap_otn/(1 + r_ap_otn))
     a = math.sqrt(a1 - 2 * a2 * math.cos(angle1))
     b1 = 2 / (1 + r_ap_otn) + 2 * r_otn / (r_otn + r_ap_otn)
     b2 = math.sqrt(r_otn / (1 + r_ap_otn) / (r_otn + r_ap_otn))
-    b = 1/math.sqrt(r_ap_otn) * math.sqrt(b1 - 4 * b2 * math.cos(angle2))
+    b = 1/math.sqrt(r_ap_otn) * math.sqrt(b1 - 4 * b2 * math.cos(delta_angle - angle1 - angle2))
     c1 = (r_otn + 3 * r_ap_otn) / (r_otn + r_ap_otn)
     c2 = math.sqrt(2 * r_ap_otn / (r_otn + r_ap_otn))
-    c = 1/math.sqrt(r_otn) * math.sqrt(c1 - 2 * c2 * math.cos(delta_i - angle1 - angle2))
+    c = 1/math.sqrt(r_otn) * math.sqrt(c1 - 2 * c2 * math.cos(angle2))
     sum_speed = a + b + c
-    return round(sum_speed, 4)
+    finally_speed = sum_speed * first_speed_space
+    return round(finally_speed, 4)
 
 
 for j in range(80000, 400000, 60000):
     dict_three_impulse = []
     print("Оптимизация для высоты апогея орбиты заброса, равной ", j)
-    for i in np.arange(0, 10 + 0.2, 0.2):    # Нахождение оптимального угла поворота в перигее
-        dict_three_impulse.append({'speed': speed_three_impulse(optimum_i, i, j), 'i_2': round(i, 2), 'i_3': round((delta_i - i), 2)})
+    
+    for i in np.arange(0, 6.5, 0.5):    # Нахождение оптимального угла поворота в перигее
+        dict_three_impulse.append({'massa': int(search_m_PN(fuel_consumption(M_0, speed_three_impulse(delta_i, optimum_i, i, j)), m_PN, speed_three_impulse(delta_i, optimum_i, i, j))),'speed': speed_three_impulse(delta_i, optimum_i, i, j), 'i_3': round(i, 2), 'i_2': round((delta_i - i - 2.6), 2)})
     for elem in dict_three_impulse:
         print(elem)
     min_speed_2 = min([x['speed'] for x in dict_three_impulse])
@@ -145,13 +155,54 @@ for j in range(80000, 400000, 60000):
     print('Масса топлива для перелета с минимальной скоростью: ', fuel_consumption(M_0, min_speed_2))
     step = int(input("Задайте шаг уменьшения массы КА - "))
     search_m_PN(fuel_consumption(M_0, min_speed_2), m_PN, min_speed_2)
+    
     path = 'three_impulse_' + str(j) + '.csv'
-    with open(path,'w') as csvfile:
+    with open(path,'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(('speed','i_2','i_3'))
+        writer.writerow(('massa','speed','i_3','i_2'))
 
         for elem in dict_three_impulse:
-            writer.writerow((elem['speed'],elem['i_2'],elem['i_3']))
+            writer.writerow((elem['massa'],elem['speed'],elem['i_3'],elem['i_2']))
+    
+    a = (j + 2 * R_Earth + h_p) / 2
+    T1 = round(2 * math.pi * math.sqrt(math.pow(a, 3) / mu_Earth)/3600/2)
+    a = (j + 2 * R_Earth + h_a) / 2
+    T2 = round(2 * math.pi * math.sqrt(math.pow(a, 3) / mu_Earth)/3600/2)
+    T = T1 + T2
+    time_array.append(T)
+    height_array.append(j)
+
+# print('Время перелета: ', time_array)
+# График зависимости скорости от угла поворота в перигее
+plt.plot(height_array, time_array)
+plt.grid()
+plt.xlabel("Высота апогея переходной орбиты, км ")
+plt.ylabel("Время перелета, ч")
+plt.show()
+
+# Версия для первого и третьего угла, равных нулю
+
+# dict_three_impulse = []
+# for j in range(150000, 600000, 60000):
+#     dict_three_impulse.append({'speed': speed_three_impulse(delta_i, 0, delta_i, j), 'r_a': j})
+
+# for elem in dict_three_impulse:
+#         print(elem)
+# min_speed_2 = min([x['speed'] for x in dict_three_impulse])
+# print("Минимальная импульсная скорость, необходимая для перелета: ", min_speed_2)
+# print('Масса топлива для перелета с минимальной скоростью: ', fuel_consumption(M_0, min_speed_2))
+# step = int(input("Задайте шаг уменьшения массы КА - "))
+# search_m_PN(fuel_consumption(M_0, min_speed_2), m_PN, min_speed_2)
+    
+# three_speed_array = [x['speed'] for x in dict_three_impulse]
+# r_a_array = [x['r_a'] for x in dict_three_impulse]
+
+# plt.plot(r_a_array, three_speed_array)
+# plt.grid()
+# plt.xlabel("Радиус переходной орбиты, км")
+# plt.ylabel("Суммарная импульсная скорость, км/с")
+# plt.show()
 
 
-
+        
+    

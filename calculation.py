@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-latitude = 45.62                    # Широта точки старта, град.
+latitude = 62.96                    # Широта точки старта, град.
 i_target = 0                        # Наклонение ГСО, град.
 i_p = 0                             # Поворот орбиты в перигее, град.
 mu_Earth = 398600                   # Гравитационный параметр Земли, км^3/c^2
@@ -12,9 +12,9 @@ h_p = 200                           # Высота перигея переход
 h_a = 35793                         # Высота апогея переходной орбиты, км
 r_p = R_Earth + h_p                 # Радиус переходной орбиты в перигее, км
 r_a = R_Earth + h_a                 # Радиус переходной орбиты в апогее, км
-m_top = 6550                        # Масса топлива, кг
+m_top = 10140                        # Масса топлива, кг
 m_PN = 5000                         # Масса КА
-m_RB = 7640                         # Масса РБ
+m_RB = 11680                         # Масса РБ
 M_0 = m_RB + m_PN                   # Масса ПН (РБ + КА), кг
 I = 333.2 * 9.81/1000               # Удельный импульс, км/с
 dict_i_speed = []
@@ -134,7 +134,7 @@ plt.show()
 
 time_array = []
 height_array = []
-P = 1000                  # Потребляемая мощность, Вт
+P = 700                  # Потребляемая мощность, Вт
 C_u = 660                   # Удельная емкость, ВТ*ч/кг
 battery_array = [] 
 def speed_three_impulse(delta_angle, angle1, angle2, r_ap):      # Апогей переходных эллиптических орбит, км
@@ -192,8 +192,13 @@ for j in range(80000, 400000, 60000):
     C = P * T
     massa_battery = C / C_u
     battery_array.append(massa_battery)
+    with open('massa_battery.csv','w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=';')
+        for elem in battery_array:
+            elem = round(elem)
+            writer.writerow([elem])
 
-
+print(time_array)
 
 # График зависимости времени перелета от высоты апогея переходной орбиты
 plt.plot(height_array, time_array)
